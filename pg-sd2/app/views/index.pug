@@ -1,13 +1,49 @@
 extends layout
 
 block content
-  .center-content
-    h1 Welcome to Our Technical Support Website
+  header.content-header
+    .header-text
+      h1 RoePilot Dashboard
+      p.subtitle University IT Support Center
+    a.btn-primary(href="/supportrequests/new")
+      i(data-feather="plus") 
+      span New Request
 
-    if user
-      p Hello, #{user.username}! Use the navigation links above to browse different sections, find solutions to your technical issues and assist other users.
-    else
-      p Please log in or register to access the technical support features.
-      p Use the navigation links above to browse different sections.
+  .metrics-row
+    .metric-card
+      .metric-label TOTAL REQUESTS
+      .metric-value #{stats.totalRequests}
+    .metric-card
+      .metric-label RESOLVED
+      .metric-value #{stats.resolved}
 
-    img(src="/images/R.png", alt="RoePilot", width="600")
+  .dashboard-content
+    .activity-feed
+      h2.section-title Recent Activity
+      .feed-list
+        if recentActivity && recentActivity.length > 0
+          each item in recentActivity
+            .feed-card
+              .status-bar(class=(item.IsResolved ? 'status-green' : 'status-red'))
+              .feed-card-content
+                h3 #{item.Title}
+                .feed-meta
+                  span #{item.Username}
+                  span.dot •
+                  span #{new Date(item.PostDate).toLocaleDateString()}
+        else
+          p No recent activity.
+
+    aside.top-contributors
+      h2.section-title Top Contributors
+      .contributor-list
+        if topContributors && topContributors.length > 0
+          each user in topContributors
+            .contributor-item
+              .contributor-icon
+                i(data-feather="user")
+              .contributor-info
+                .contributor-name #{user.Username}
+                .contributor-rep #{user.CredibilityScore} rep
+        else
+          p No contributors found.

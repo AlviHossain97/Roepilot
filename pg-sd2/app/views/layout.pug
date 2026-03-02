@@ -1,14 +1,15 @@
 doctype html
 html
   head
-    title My Application
+    title RoePilot Dashboard
+    link(rel="preconnect" href="https://fonts.googleapis.com")
+    link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
+    link(href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet")
+    link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css")
     link(rel="stylesheet", href="/styles.css")
+    script(src="https://unpkg.com/feather-icons")
     style.
-      mark.highlight {
-        background-color: orange;
-        color: black;
-        padding: 0 2px;
-      }
+      mark.highlight { background-color: orange; color: black; padding: 0 2px; }
     script.
       function highlightText(element, keyword) {
         if (!keyword) return;
@@ -16,7 +17,6 @@ html
         const content = element.innerHTML.replace(/<mark class="highlight">|<\/mark>/g, "");
         element.innerHTML = content.replace(regex, '<mark class="highlight">$1</mark>');
       }
-
       function liveFilter(inputId, itemClass) {
         const input = document.getElementById(inputId);
         if (!input) return;
@@ -27,27 +27,35 @@ html
             const text = item.innerText.toLowerCase();
             const match = text.includes(value);
             item.style.display = match ? 'block' : 'none';
-
-            // Highlight inside each element
             const textElements = item.querySelectorAll("h2, p");
             textElements.forEach(el => highlightText(el, value));
           });
         });
       }
   body
-    nav.navbar
-      .nav-left
-        img.navbar-logo(src="/images/Roepilot-removebg-preview.png", alt="RoePilot Logo")
-      .nav-right
-        a(href="/home") Home
-        | 
-        a(href="/categories") Categories
-        | 
-        a(href="/supportrequests") Support Requests
-        | 
-        a(href="/supportrequests/new") Ask a Question
-        | 
-        a(href="/users") Users
-        | 
-        a(href="/logout") Logout
-    block content
+    if user
+      .app-container
+        aside.sidebar
+          .logo-box
+            i(data-feather="layout")
+          nav.sidebar-nav
+            a(href="/home", title="Dashboard", class=(activePage === 'home' ? 'active' : ''))
+              i(data-feather="home")
+            a(href="/supportrequests", title="Requests", class=(activePage === 'requests' ? 'active' : ''))
+              i(data-feather="file-text")
+            a(href="/users", title="Users", class=(activePage === 'users' ? 'active' : ''))
+              i(data-feather="users")
+            a(href="/profile", title="Profile", class=(activePage === 'profile' ? 'active' : ''))
+              i(data-feather="user")
+          .sidebar-bottom
+            a(href="/logout", title="Logout")
+              i(data-feather="log-out")
+        
+        main.main-content
+          block content
+    else
+      .auth-layout
+        block content
+
+    script.
+      feather.replace()

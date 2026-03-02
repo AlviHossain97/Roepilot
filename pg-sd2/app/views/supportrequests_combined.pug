@@ -1,59 +1,89 @@
 extends layout
 
 block content
-  if pageTitle
-    h1 #{pageTitle}
-  else if filterUserName
-    h1
-      img.profile-img(src="/images/" + filterUserPic, alt=filterUserName)
-      |  Support Requests by #{filterUserName}
-  else
-    h1 Support Requests
-
-  //- Centered and card-style search form
-  .search-container(style="display: flex; justify-content: center; margin-bottom: 20px;")
-    .search-card(style="background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; max-width: 600px;")
-      form#searchForm(method="get", action="/supportrequests", style="display: flex; gap: 10px;")
-        input#searchInput(type="text", name="search", placeholder="Search support requests...", value=(search || ""), style="flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #ccc;")
+  header.content-header
+    .header-text
+      if pageTitle
+        h1 #{pageTitle}
+      else if filterUserName
+        h1 Support Requests by #{filterUserName}
+      else
+        h1 Support Requests
+        
+  .search-wrapper(style="margin-bottom: 48px;")
+    form#searchForm(method="get", action="/supportrequests", style="display: flex; gap: 16px;")
+      input#searchInput(type="text", name="search", placeholder="Search requests...", value=(search || ""))
+      button.btn-primary(type="submit") Search
 
   if filterUserName || pageTitle
-    a.back-link(href="/supportrequests") ← Back to All Support Requests
-
+    a(href="/supportrequests" style="color: var(--accent-primary); font-family: var(--font-data); font-weight: 500; font-size: 13px; text-decoration: none; margin-bottom: 24px; display: inline-block;") ← Back to All
+  
   if error
-    p.error #{error}
+    p.error(style="color: var(--accent-alert);") #{error}
   else if posts && posts.length
-    each post in posts
-      .post-box
-        .post-header
-          h2 #{post.Title}
-          p.small Posted by #{post.Username} on #{post.PostDate}
-          if post.CategoryName
-            p.small Category: #{post.CategoryName}
-        .post-body
-          p #{post.Description}
+    .feed-list
+      each post in posts
+        .feed-card(style="flex-direction: column; gap: 24px;")
+          .feed-card-header(style="display: flex; gap: 16px;")
+            .status-bar(class=(post.IsResolved ? 'status-green' : 'status-red'))
+            div(style="flex: 1;")
+              a(href="/supportrequests?category=" + post.CategoryID style="text-decoration: none; color: inherit;")
+                h3(style="font-size: 24px; letter-spacing: -1px; margin-bottom: 8px;") #{post.Title}
+              .feed-meta
+                span Opened by #{post.Username}
+                span.dot •
+                span #{new Date(post.PostDate).toLocaleDateString()}
+                if post.BountyValue > 0
+                  span.dot •
+                  span(style="color: var(--accent-alert); font-weight: 600;") Bounty: #{post.BountyValue} Rep
+          
+          if post.tags && post.tags.length > 0
+            .tags(style="display: flex; gap: 8px; margin-left: 20px;")
+              each tag in post.tags
+                span(style="background: var(--bg-tint); padding: 4px 8px; font-family: var(--font-data); font-size: 11px;") #{tag}
 
-        if post.answers.length
-          .answer-section
-            h3 Answers
-            each answer in post.answers
-              .answer-box
-                p #{answer.AnswerText}
-                p.small Posted on #{answer.PostDate}, Upvotes: #{answer.NumOfUpvote}
-                form(action="/answers/upvote/" + answer.AnswerID, method="post")
-                  button(type="submit") Upvote
-                form(action="/answers/downvote/" + answer.AnswerID, method="post")
-                  button(type="submit") Downvote
-        else
-          p.no-comments No answers yet.
+          .post-body(style="padding: 24px; border: 1px solid var(--border-color); font-size: 14px;")
+            p #{post.Description}
 
-        // Answer submission form
-        if user
-          form(method="POST", action="/answers/" + post.RequestID, class="answer-form")
-            textarea(name="answerText", placeholder="Write your answer..." required)
-            button.btn(type="submit") Submit Answer
+          if post.answers.length
+            .answers-header(style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-top: 24px;")
+              h3 #{post.answers.length} Answers
+            .answers-list(style="display: flex; flex-direction: column; gap: 24px; margin-top: 24px;")
+              each answer in post.answers
+                .answer-card(style=(answer.IsAccepted ? "display: flex; padding: 24px; border: 2px solid var(--accent-success); gap: 24px;" : "display: flex; padding: 24px; border: 1px solid var(--border-color); gap: 24px;"))
+                  .vote-col(style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 40px;")
+                    form(action="/answers/upvote/" + answer.AnswerID, method="post")
+                      button(type="submit" style="background: none; border: none; cursor: pointer; color: var(--text-muted);")
+                        i(data-feather="chevron-up")
+                    div(style="font-family: var(--font-data); font-weight: 600; font-size: 16px;") #{answer.NumOfUpvote}
+                    form(action="/answers/downvote/" + answer.AnswerID, method="post")
+                      button(type="submit" style="background: none; border: none; cursor: pointer; color: var(--text-muted);")
+                        i(data-feather="chevron-down")
+                    if answer.IsAccepted
+                      i(data-feather="check-circle" style="color: var(--accent-success); margin-top: 8px;")
+                      
+                  .answer-content-col(style="flex: 1; display: flex; flex-direction: column; gap: 16px;")
+                    p(style="font-size: 14px;") #{answer.AnswerText}
+                    .feed-meta
+                      if answer.IsAccepted
+                        span(style="color: var(--accent-success); font-weight: 600;") Accepted Answer
+                        span.dot •
+                      span Answered on #{new Date(answer.PostDate).toLocaleDateString()}
+                    
+                    if user && !answer.IsAccepted
+                      form(action="/answers/accept/" + answer.AnswerID, method="post")
+                        button.btn-primary(type="submit" style="background: transparent; color: var(--accent-success); border: 1px solid var(--accent-success); padding: 6px 12px;") Accept
+
+          if user
+            .add-answer(style="margin-top: 32px; background: var(--bg-tint); padding: 32px;")
+              h3(style="margin-bottom: 16px;") Your Answer
+              form(method="POST", action="/answers/" + post.RequestID, style="display: flex; flex-direction: column; gap: 16px;")
+                textarea(name="answerText", placeholder="Write your answer..." required style="min-height: 120px;")
+                div
+                  button.btn-primary(type="submit") Post Answer
 
   else
     p No support requests available.
 
   script.
-    liveFilter("searchInput", "post-box");
+    liveFilter("searchInput", "feed-card");

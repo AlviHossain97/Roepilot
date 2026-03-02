@@ -1,28 +1,37 @@
 extends layout
 
 block content
-  h1 Users
+  header.content-header(style="margin-bottom: 32px;")
+    .header-text
+      h1 Users
+      p.subtitle Browse people in the university network
 
-  .search-container(style="display: flex; justify-content: center; margin-bottom: 20px;")
-    .search-card(style="background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; max-width: 600px;")
-      form#searchForm(method="get", action="/users", style="display: flex; gap: 10px;")
-        input#searchInput(type="text", name="search", placeholder="Search users...", value=(search || ""), style="flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #ccc;")
+  .search-wrapper(style="margin-bottom: 48px;")
+    form#searchForm(method="get", action="/users", style="display: flex; gap: 16px;")
+      input#searchInput(type="text", name="search", placeholder="Search users...", value=(search || ""))
+      button.btn-primary(type="submit") Search
 
   if error
-    p.error #{error}
+    p.error(style="color: var(--accent-alert);") #{error}
   else if users && users.length
     .user-grid
       each user in users
         .user-card
-          img.profile-img(src=(user.ProfilePic ? "/images/" + user.ProfilePic : "/images/default-avatar.png"), alt="Profile Picture")
-          h2 #{user.Username}
-          p Email: #{user.Email}
-          p University ID: #{user.UniversityID}
-          p Credibility Score: #{user.CredibilityScore}
-          p Registered On: #{user.RegistrationDate}
-          
-          // 🔗 Link to user profile
-          a.btn(href="/users/" + user.UserID) View Profile
+          .user-card-header
+            img.profile-img(src=(user.ProfilePic ? "/images/" + user.ProfilePic : "https://ui-avatars.com/api/?name=" + user.Username + "&background=000&color=fff"), alt="Profile Picture")
+            div
+              h2 #{user.Username}
+              p.user-role University Member
+              
+          .user-card-stats
+            .stat-box
+              p.stat-label REP
+              p.stat-value #{user.CredibilityScore}
+            .stat-box
+              p.stat-label ID
+              p.stat-value #{user.UniversityID}
+              
+          a.btn-primary(href="/users/" + user.UserID style="width: 100%; justify-content: center; margin-top: auto;") View Profile
   else
     p No users available.
 
