@@ -1,0 +1,21 @@
+extends layout
+
+block content
+  .form-container
+    h1 Register
+
+    if error
+      p.error #{error}
+    if success
+      p.success #{success}
+
+    form(action="/register" method="POST")
+      input(type="text" name="username" placeholder="Username" required)
+      input(type="email" name="email" placeholder="Email" required)
+      input(type="text" name="universityId" placeholder="University ID" required)
+      input(type="password" name="password" placeholder="Password" required)
+      button(type="submit") Register
+
+    p.small-text
+      | Already have an account?
+      a(href="/login") Log in here

@@ -1,0 +1,44 @@
+extends layout
+
+block content
+  .center-content
+    .user-card
+      // 📸 Centered Profile Picture
+      .logo
+        if profileUser.ProfilePic
+          img.profile-img(src=`/images/${profileUser.ProfilePic}`, alt="Profile Picture")
+        else
+          img.profile-img(src="/images/default-avatar.png", alt="Default Picture")
+
+      h2= isSelf ? "My Profile" : `${profileUser.Username}'s Profile`
+      p Email: #{profileUser.Email}
+      p University ID: #{profileUser.UniversityID}
+      p Credibility Score: #{profileUser.CredibilityScore || 0}
+      p Registered On: #{profileUser.RegistrationDate}
+
+      if isSelf
+        a.btn(href="/profile/edit") Edit Profile
+
+    hr
+
+    h2 Support Requests
+    if supportRequests.length
+      each req in supportRequests
+        .post-box
+          h3= req.Title
+          p= req.Description
+          p.small Posted on #{req.PostDate}
+    else
+      p This user hasn’t made any support requests yet.
+
+    hr
+
+    h2 Answers
+    if userAnswers.length
+      each ans in userAnswers
+        .answer-box
+          h4 Answer to: #{ans.RequestTitle}
+          p= ans.AnswerText
+          p.small Posted on #{ans.PostDate}
+    else
+      p No answers yet.

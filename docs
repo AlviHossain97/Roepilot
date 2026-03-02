@@ -1,0 +1,87 @@
+1. Secure Registration and Login System
+Feature: A secure registration and login system is available for university students.
+
+User Story 1:
+As a student, I want to register using my university email address so that only verified university students can access the platform.
+User Story 2:
+As a student, I want to log in securely with multi-factor authentication (MFA) so that my account remains protected from unauthorized access.
+User Story 3:
+As a student, I want to reset my password easily if I forget it, so that I can regain access to the platform without hassle.
+
+
+2. Posting Technical Questions with Categorization and Explanations
+Feature: Students can post many technical questions, categorize these questions, and provide thorough explanations.
+
+User Story 1:
+As a student, I want to post technical questions in the community so that other students can help me solve my issue.
+User Story 2:
+As a student, I want to categorize my question into specific tags (e.g., software, hardware, networking) so that others can quickly identify and respond to relevant issues.
+User Story 3:
+As a student, I want to provide detailed explanations of my problem when posting a question so that others have enough context to offer accurate solutions.
+
+
+3. Offering Solutions, Explanations, and Troubleshooting Steps
+Feature: Other students may offer thorough solutions, detailed explanations, or effective troubleshooting steps.
+
+User Story 1:
+As a student, I want to view unanswered questions so that I can share my knowledge and assist others in solving their technical problems.
+User Story 2:
+As a student, I want to provide step-by-step troubleshooting instructions in my response so that the original poster can follow them easily.
+User Story 3:
+As a student, I want to include screenshots, code snippets, or links in my answers so that my solution is clear and actionable.
+
+
+4. Upvoting Helpful Answers and Selecting the Best Answer
+Feature: Users enthusiastically upvote exceptionally helpful answers, in addition to the original poster selecting the single best answer.
+
+User Story 1:
+As a student, I want to upvote answers that are particularly helpful so that the best responses are highlighted for everyone to see.
+User Story 2:
+As the original poster, I want to select the single best answer to my question so that others know which solution resolved my issue.
+User Story 3:
+As a student, I want to see the most upvoted answers at the top of the thread so that I can quickly find the most effective solutions.
+
+
+5. Categorized Tags and Powerful Search Functionality
+Feature: Categorized tags improve the ease of finding related issues and solutions. A powerful search function further improves this process.
+
+User Story 1:
+As a student, I want to use categorized tags when posting or searching for questions so that I can easily find related issues and solutions.
+User Story 2:
+As a student, I want to use a powerful search function to find specific technical problems or solutions so that I don’t have to scroll through unrelated content.
+User Story 3:
+As a student, I want the search results to display questions and answers based on relevance and popularity so that I can quickly find the most useful information.
+
+
+6. Reporting and Flagging for Civil Society
+Feature: Civil society benefits from some reporting and some flagging.
+
+User Story 1:
+As a student, I want to report inappropriate or offensive content so that the platform remains respectful and useful for everyone.
+User Story 2:
+As a student, I want to flag misleading or incorrect answers so that others are not misled by inaccurate information.
+User Story 3:
+As an admin, I want to review flagged or reported content so that I can take appropriate action to maintain the quality and civility of the platform.
+
+
+7. Building Credibility Through Meaningful Activity
+Feature: Users can build credibility through their meaningful activity. Important contributions also substantially increase credibility.
+
+User Story 1:
+As a student, I want to earn reputation points for providing helpful answers so that my contributions are recognized by the community.
+User Story 2:
+As a student, I want my reputation score to increase significantly when I provide high-quality, well-received solutions so that I can establish myself as a trusted contributor.
+User Story 3:
+As a student, I want to see my overall credibility score displayed on my profile so that others can gauge my expertise and trustworthiness.
+User Story 4:
+As a student, I want to receive constructive feedback on my answers so that I can improve my technical problem-solving skills and contribute more effectively.
+
+
+Summary of User Stories:
+Secure Registration & Login: Ensures only verified students can access the platform.
+Posting Questions with Categorization: Allows students to post detailed technical queries and organize them effectively.
+Offering Solutions & Troubleshooting Steps: Facilitates collaborative problem-solving with clear, actionable responses.
+Upvoting & Selecting Best Answers: Highlights the most helpful solutions and rewards contributors.
+Categorized Tags & Search Functionality: Improves discoverability of related issues and solutions.
+Reporting & Flagging: Maintains a respectful and accurate platform environment.
+Building Credibility: Encourages meaningful contributions and recognizes active, helpful users.

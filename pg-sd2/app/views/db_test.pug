@@ -1,0 +1,11 @@
+doctype html
+html
+  head
+    title Database Test
+  body
+    if result
+      h1 Result
+      p Name: #{result.name}
+    else if error
+      h1 Error
+      p #{error}

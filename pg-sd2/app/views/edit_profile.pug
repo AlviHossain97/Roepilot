@@ -1,0 +1,25 @@
+extends layout
+
+block content
+  .form-card
+    h1 Edit Profile
+
+    form(method="POST", action="/profile/edit", enctype="multipart/form-data")
+      .form-group
+        label(for="email") Email
+        input(type="email", name="email", value=profileUser.Email, required)
+
+      .form-group
+        label(for="universityId") University ID
+        input(type="text", name="universityId", value=profileUser.UniversityID)
+
+      .form-group
+        label(for="profilePic") Profile Picture
+        if profileUser.ProfilePic
+          img.profile-img(src=`/images/${profileUser.ProfilePic}`, alt="Current Profile Picture")
+        else
+          img.profile-img(src="/images/default-avatar.png", alt="Default Picture")
+        input(type="file", name="profilePic", accept="image/*")
+
+      button.btn(type="submit") Save Changes
+      a.back-link(href="/profile") Cancel

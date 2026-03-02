@@ -1,0 +1,53 @@
+doctype html
+html
+  head
+    title My Application
+    link(rel="stylesheet", href="/styles.css")
+    style.
+      mark.highlight {
+        background-color: orange;
+        color: black;
+        padding: 0 2px;
+      }
+    script.
+      function highlightText(element, keyword) {
+        if (!keyword) return;
+        const regex = new RegExp(`(${keyword})`, "gi");
+        const content = element.innerHTML.replace(/<mark class="highlight">|<\/mark>/g, "");
+        element.innerHTML = content.replace(regex, '<mark class="highlight">$1</mark>');
+      }
+
+      function liveFilter(inputId, itemClass) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.addEventListener('input', () => {
+          const value = input.value.trim().toLowerCase();
+          const items = document.querySelectorAll(`.${itemClass}`);
+          items.forEach(item => {
+            const text = item.innerText.toLowerCase();
+            const match = text.includes(value);
+            item.style.display = match ? 'block' : 'none';
+
+            // Highlight inside each element
+            const textElements = item.querySelectorAll("h2, p");
+            textElements.forEach(el => highlightText(el, value));
+          });
+        });
+      }
+  body
+    nav.navbar
+      .nav-left
+        img.navbar-logo(src="/images/Roepilot-removebg-preview.png", alt="RoePilot Logo")
+      .nav-right
+        a(href="/home") Home
+        | 
+        a(href="/categories") Categories
+        | 
+        a(href="/supportrequests") Support Requests
+        | 
+        a(href="/supportrequests/new") Ask a Question
+        | 
+        a(href="/users") Users
+        | 
+        a(href="/logout") Logout
+    block content

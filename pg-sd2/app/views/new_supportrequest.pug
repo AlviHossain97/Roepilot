@@ -1,0 +1,26 @@
+extends layout
+
+block content
+  .form-card
+    h1 Ask a New Question
+
+    if error
+      p.error #{error}
+
+    form(method="POST", action="/supportrequests")
+      .form-group
+        label(for="title") Title
+        input#title(type="text", name="title", placeholder="Enter your question title", required)
+
+      .form-group
+        label(for="description") Description
+        textarea#description(name="description", rows="6", placeholder="Describe your issue clearly...", required)
+
+      .form-group
+        label(for="categoryId") Select a Category
+        select#categoryId(name="categoryId", required)
+          option(value="" disabled selected) -- Choose a category --
+          each category in categories
+            option(value=category.CategoryID)= category.CategoryName
+
+      button.btn(type="submit") Submit Question

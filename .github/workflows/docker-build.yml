@@ -1,0 +1,23 @@
+name: Manual Docker Build for RoePilot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: List files in project root
+        run: ls -R
+
+      - name: Docker Compose up
+        run: docker compose --env-file pg-sd2/.env.ci -f pg-sd2/docker-compose.yml up -d --build
+
+      - name: Show running containers
+        run: docker ps

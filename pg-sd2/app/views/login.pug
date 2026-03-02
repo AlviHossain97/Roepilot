@@ -1,0 +1,24 @@
+extends layout
+
+block content
+  .page-container
+    .welcome
+      h1 RoePilot Technical Support Website
+
+    .logo
+      img(src="/images/R.png", alt="RoePilot", width="600")
+
+    .form-container
+      h1 Login
+
+      if error
+        p.error #{error}
+
+      form(action="/login", method="POST")
+        input(type="text", name="identifier", placeholder="Username or Email", required)
+        input(type="password", name="password", placeholder="Password", required)
+        button(type="submit") Login
+
+      p.small-text
+        | Don't have an account?&nbsp;
+        a(href="/register")  Register here

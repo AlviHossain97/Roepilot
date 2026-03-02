@@ -1,0 +1,13 @@
+extends layout
+
+block content
+  .center-content
+    h1 Welcome to Our Technical Support Website
+
+    if user
+      p Hello, #{user.username}! Use the navigation links above to browse different sections, find solutions to your technical issues and assist other users.
+    else
+      p Please log in or register to access the technical support features.
+      p Use the navigation links above to browse different sections.
+
+    img(src="/images/R.png", alt="RoePilot", width="600")

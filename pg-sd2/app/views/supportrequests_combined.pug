@@ -1,0 +1,59 @@
+extends layout
+
+block content
+  if pageTitle
+    h1 #{pageTitle}
+  else if filterUserName
+    h1
+      img.profile-img(src="/images/" + filterUserPic, alt=filterUserName)
+      |  Support Requests by #{filterUserName}
+  else
+    h1 Support Requests
+
+  //- Centered and card-style search form
+  .search-container(style="display: flex; justify-content: center; margin-bottom: 20px;")
+    .search-card(style="background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; max-width: 600px;")
+      form#searchForm(method="get", action="/supportrequests", style="display: flex; gap: 10px;")
+        input#searchInput(type="text", name="search", placeholder="Search support requests...", value=(search || ""), style="flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #ccc;")
+
+  if filterUserName || pageTitle
+    a.back-link(href="/supportrequests") ← Back to All Support Requests
+
+  if error
+    p.error #{error}
+  else if posts && posts.length
+    each post in posts
+      .post-box
+        .post-header
+          h2 #{post.Title}
+          p.small Posted by #{post.Username} on #{post.PostDate}
+          if post.CategoryName
+            p.small Category: #{post.CategoryName}
+        .post-body
+          p #{post.Description}
+
+        if post.answers.length
+          .answer-section
+            h3 Answers
+            each answer in post.answers
+              .answer-box
+                p #{answer.AnswerText}
+                p.small Posted on #{answer.PostDate}, Upvotes: #{answer.NumOfUpvote}
+                form(action="/answers/upvote/" + answer.AnswerID, method="post")
+                  button(type="submit") Upvote
+                form(action="/answers/downvote/" + answer.AnswerID, method="post")
+                  button(type="submit") Downvote
+        else
+          p.no-comments No answers yet.
+
+        // Answer submission form
+        if user
+          form(method="POST", action="/answers/" + post.RequestID, class="answer-form")
+            textarea(name="answerText", placeholder="Write your answer..." required)
+            button.btn(type="submit") Submit Answer
+
+  else
+    p No support requests available.
+
+  script.
+    liveFilter("searchInput", "post-box");
