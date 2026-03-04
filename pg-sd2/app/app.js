@@ -5,20 +5,83 @@ const { User } = require("./models/user");
 const session = require("express-session");
 const answerModel = require('./models/answerModel');
 const multer = require("multer");
+const crypto = require("crypto");
+const path = require("path");
 // const SQLiteStore = require("connect-sqlite3")(session); // Uncomment to use persistent session store
 
 // Middleware: form parser & sessions
-app.use(express.urlencoded({ extended: true }));
+app.disable("x-powered-by");
+app.set("trust proxy", 1);
+app.use(express.urlencoded({ extended: false, limit: "100kb" }));
 app.use(session({
   // store: new SQLiteStore({ db: 'sessions.sqlite' }), // Uncomment this for persistent sessions
-  secret: 'secretkeysdfjsflyoifasd',
+  name: "roepilot.sid",
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(48).toString("hex"),
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Set to true if using HTTPS
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 // 1 day
   }
 }));
+
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https://ui-avatars.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://unpkg.com; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
+  next();
+});
+
+function ensureCsrfToken(req) {
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = crypto.randomBytes(32).toString("hex");
+  }
+  return req.session.csrfToken;
+}
+
+function getSafeRedirect(req, fallback = "/supportrequests") {
+  const referer = req.get("referer");
+  if (!referer) return fallback;
+  try {
+    const refererUrl = new URL(referer);
+    return `${refererUrl.pathname}${refererUrl.search || ""}`;
+  } catch {
+    if (referer.startsWith("/") && !referer.startsWith("//")) return referer;
+    return fallback;
+  }
+}
+
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+app.use((req, res, next) => {
+  res.locals.csrfToken = ensureCsrfToken(req);
+  next();
+});
+
+function hasValidCsrfToken(req) {
+  const submittedToken = req.body?._csrf || req.get("x-csrf-token");
+  return Boolean(submittedToken && submittedToken === req.session.csrfToken);
+}
+
+app.use((req, res, next) => {
+  const protectedMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+  if (!protectedMethods.has(req.method)) return next();
+  if (req.is("multipart/form-data")) return next();
+  if (!hasValidCsrfToken(req)) {
+    return res.status(403).send("Security token validation failed. Please refresh and try again.");
+  }
+  next();
+});
 
 function resolveActivePage(pathname = "") {
   if (pathname === "/home") return "home";
@@ -41,11 +104,22 @@ const storage = multer.diskStorage({
     cb(null, "./static/images");
   },
   filename: function (req, file, cb) {
-    const uniqueName = Date.now() + "-" + file.originalname;
+    const cleanName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, "_");
+    const uniqueName = Date.now() + "-" + cleanName;
     cb(null, uniqueName);
   }
 });
-const upload = multer({ storage: storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+    if (!allowedMimeTypes.has(file.mimetype)) {
+      return cb(new Error("Only JPEG, PNG, WEBP, and GIF images are allowed."));
+    }
+    cb(null, true);
+  }
+});
 
 // Serve static files
 app.use(express.static("static"));
@@ -110,7 +184,11 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  const { identifier, password } = req.body;
+  const identifier = normalizeText(req.body.identifier);
+  const password = String(req.body.password || "");
+  if (!identifier || !password) {
+    return res.render("login", { error: "Username/email and password are required.", pageTitle: "Login" });
+  }
   const user = new User({});
   const authUser = await user.authenticate(identifier, password);
 
@@ -131,8 +209,24 @@ app.get('/register', (req, res) => {
 });
 
 app.post("/register", async (req, res) => {
-  const { username, email, password, universityId } = req.body;
+  const username = normalizeText(req.body.username);
+  const email = normalizeText(req.body.email).toLowerCase();
+  const password = String(req.body.password || "");
+  const universityId = normalizeText(req.body.universityId);
   const user = new User({ email, username });
+
+  if (username.length < 3 || username.length > 40) {
+    return res.render("register", { error: "Username must be between 3 and 40 characters.", pageTitle: "Register" });
+  }
+  if (!isValidEmail(email)) {
+    return res.render("register", { error: "Enter a valid email address.", pageTitle: "Register" });
+  }
+  if (password.length < 8) {
+    return res.render("register", { error: "Password must be at least 8 characters.", pageTitle: "Register" });
+  }
+  if (!universityId || universityId.length > 30) {
+    return res.render("register", { error: "University ID is required and must be under 30 characters.", pageTitle: "Register" });
+  }
 
   try {
     await user.addUser({ username, email, password, universityId });
@@ -347,9 +441,30 @@ app.get("/supportrequests/new", requireLogin, async (req, res) => {
 });
 
 app.post("/supportrequests", requireLogin, async (req, res) => {
-  const { title, description, categoryId, bountyValue, tags } = req.body;
+  const title = normalizeText(req.body.title);
+  const description = normalizeText(req.body.description);
+  const categoryId = Number.parseInt(req.body.categoryId, 10);
+  const tags = normalizeText(req.body.tags);
+  const bountyValue = req.body.bountyValue;
   const userId = req.session.user.id;
-  const bounty = bountyValue ? parseInt(bountyValue) : 0;
+  const bounty = bountyValue ? Number.parseInt(bountyValue, 10) : 0;
+
+  if (title.length < 5 || title.length > 150) {
+    const categories = await db.query("SELECT * FROM Categories");
+    return res.render("new_supportrequest", { error: "Title must be between 5 and 150 characters.", categories, pageTitle: "New Support Request" });
+  }
+  if (description.length < 15 || description.length > 4000) {
+    const categories = await db.query("SELECT * FROM Categories");
+    return res.render("new_supportrequest", { error: "Description must be between 15 and 4000 characters.", categories, pageTitle: "New Support Request" });
+  }
+  if (!Number.isInteger(categoryId) || categoryId <= 0) {
+    const categories = await db.query("SELECT * FROM Categories");
+    return res.render("new_supportrequest", { error: "Select a valid category.", categories, pageTitle: "New Support Request" });
+  }
+  if (!Number.isInteger(bounty) || bounty < 0 || bounty > 5000) {
+    const categories = await db.query("SELECT * FROM Categories");
+    return res.render("new_supportrequest", { error: "Bounty must be between 0 and 5000.", categories, pageTitle: "New Support Request" });
+  }
 
   try {
     const result = await db.query(
@@ -362,12 +477,12 @@ app.post("/supportrequests", requireLogin, async (req, res) => {
       const tagList = tags.split(',').map(t => t.trim()).filter(t => t);
       for (const t of tagList) {
         // Find or create tag
-        let tagRes = await db.query("SELECT TagID FROM Tags WHERE TagName = ?", [t]);
+        let tagRes = await db.query("SELECT TagID FROM Tags WHERE TagName = ?", [t.slice(0, 40)]);
         let tagId;
         if (tagRes.length > 0) {
           tagId = tagRes[0].TagID;
         } else {
-          const insertTag = await db.query("INSERT INTO Tags (TagName) VALUES (?)", [t]);
+          const insertTag = await db.query("INSERT INTO Tags (TagName) VALUES (?)", [t.slice(0, 40)]);
           tagId = insertTag.insertId;
         }
         await db.query("INSERT INTO RequestTags (RequestID, TagID) VALUES (?, ?)", [result.insertId, tagId]);
@@ -395,8 +510,12 @@ app.post("/supportrequests", requireLogin, async (req, res) => {
 app.post("/answers/:requestId", requireLogin, async (req, res) => {
   const requestId = req.params.requestId;
   const userId = req.session.user.id;
-  const answerText = req.body.answerText;
-  const redirectTo = req.get("referer") || "/supportrequests";
+  const answerText = normalizeText(req.body.answerText);
+  const redirectTo = getSafeRedirect(req, "/supportrequests");
+
+  if (answerText.length < 2 || answerText.length > 2500) {
+    return res.status(400).send("Answer must be between 2 and 2500 characters.");
+  }
 
   try {
     await db.query(
@@ -412,7 +531,7 @@ app.post("/answers/:requestId", requireLogin, async (req, res) => {
 // Upvote Answer
 app.post("/answers/upvote/:id", requireLogin, (req, res) => {
   const answerId = req.params.id;
-  const redirectTo = req.get("referer") || "/supportrequests";
+  const redirectTo = getSafeRedirect(req, "/supportrequests");
   answerModel.upvoteAnswer(answerId)
     .then(() => {
       res.redirect(redirectTo);
@@ -424,7 +543,7 @@ app.post("/answers/upvote/:id", requireLogin, (req, res) => {
 
 // Downvote Answer
 app.post("/answers/downvote/:id", requireLogin, (req, res) => {
-  const redirectTo = req.get("referer") || "/supportrequests";
+  const redirectTo = getSafeRedirect(req, "/supportrequests");
   answerModel.downvoteAnswer(req.params.id)
     .then(() => {
       res.redirect(redirectTo);
@@ -437,7 +556,7 @@ app.post("/answers/downvote/:id", requireLogin, (req, res) => {
 // Accept Answer
 app.post("/answers/accept/:id", requireLogin, async (req, res) => {
   const answerId = req.params.id;
-  const redirectTo = req.get("referer") || "/supportrequests";
+  const redirectTo = getSafeRedirect(req, "/supportrequests");
   try {
     const ownership = await db.query(`
       SELECT s.UserID AS RequestOwnerID
@@ -534,9 +653,20 @@ app.get("/profile/edit", requireLogin, async (req, res) => {
 
 // Edit Profile Submit
 app.post("/profile/edit", requireLogin, upload.single("profilePic"), async (req, res) => {
-  const { email, universityId } = req.body;
+  if (!hasValidCsrfToken(req)) {
+    return res.status(403).send("Security token validation failed. Please refresh and try again.");
+  }
+  const email = normalizeText(req.body.email).toLowerCase();
+  const universityId = normalizeText(req.body.universityId);
   const userId = req.session.user.id;
   const profilePic = req.file?.filename;
+
+  if (!isValidEmail(email)) {
+    return res.status(400).send("Invalid email address.");
+  }
+  if (universityId.length > 30) {
+    return res.status(400).send("University ID must be under 30 characters.");
+  }
 
   try {
     const updateFields = ["Email = ?", "UniversityID = ?"];
@@ -559,10 +689,17 @@ app.post("/profile/edit", requireLogin, upload.single("profilePic"), async (req,
 });
 
 // Logout
-app.get("/logout", (req, res) => {
+app.post("/logout", (req, res) => {
   req.session.destroy(() => {
     res.redirect("/login");
   });
+});
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError || err?.message?.includes("images are allowed")) {
+    return res.status(400).send(err.message);
+  }
+  next(err);
 });
 
 // 404 handler

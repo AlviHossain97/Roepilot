@@ -6,6 +6,7 @@ block content
     p.subtitle Update your contact details and profile picture.
 
     form.auth-form(method="POST", action="/profile/edit", enctype="multipart/form-data")
+      input(type="hidden", name="_csrf", value=csrfToken)
       .form-group
         label.field-label(for="email") Email
         input#email(type="email", name="email", value=profileUser.Email, required)

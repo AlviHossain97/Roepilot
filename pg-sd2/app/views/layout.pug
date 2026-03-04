@@ -62,9 +62,11 @@ html(lang="en")
               span.sidebar-label Profile
 
           .sidebar-bottom
-            a(href="/logout")
-              i(data-feather="log-out")
-              span.sidebar-label Logout
+            form.sidebar-logout-form(action="/logout", method="POST")
+              input(type="hidden", name="_csrf", value=csrfToken)
+              button.sidebar-logout-btn(type="submit")
+                i(data-feather="log-out")
+                span.sidebar-label Logout
 
         .main-shell
           header.topbar

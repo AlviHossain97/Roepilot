@@ -12,6 +12,7 @@ block content
         .alert.alert-error #{error}
 
       form.auth-form(action="/login", method="POST")
+        input(type="hidden", name="_csrf", value=csrfToken)
         .form-group
           label.field-label(for="identifier") Username or Email
           input#identifier(type="text", name="identifier", placeholder="Enter your username or email", required)

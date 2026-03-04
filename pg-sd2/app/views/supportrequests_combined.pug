@@ -59,10 +59,12 @@ block content
                 article.answer-card(class=(answer.IsAccepted ? "accepted" : ""))
                   .vote-col
                     form(action="/answers/upvote/" + answer.AnswerID, method="post")
+                      input(type="hidden", name="_csrf", value=csrfToken)
                       button.icon-btn(type="submit", aria-label="Upvote answer")
                         i(data-feather="chevron-up")
                     div.vote-value #{answer.NumOfUpvote}
                     form(action="/answers/downvote/" + answer.AnswerID, method="post")
+                      input(type="hidden", name="_csrf", value=csrfToken)
                       button.icon-btn(type="submit", aria-label="Downvote answer")
                         i(data-feather="chevron-down")
                     if answer.IsAccepted
@@ -80,12 +82,14 @@ block content
 
                     if user && !answer.IsAccepted && Number(post.UserID) === Number(user.id)
                       form(action="/answers/accept/" + answer.AnswerID, method="post")
+                        input(type="hidden", name="_csrf", value=csrfToken)
                         button.btn-secondary(type="submit") Mark as Accepted
 
           if user
             .add-answer
               h3 Your Answer
               form.auth-form(method="POST", action="/answers/" + post.RequestID)
+                input(type="hidden", name="_csrf", value=csrfToken)
                 textarea(name="answerText", placeholder="Write a clear, actionable answer..." required rows="5")
                 .form-actions
                   button.btn-primary(type="submit") Post Answer

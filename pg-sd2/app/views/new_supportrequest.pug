@@ -9,6 +9,7 @@ block content
       .alert.alert-error #{error}
 
     form.auth-form(method="POST", action="/supportrequests")
+      input(type="hidden", name="_csrf", value=csrfToken)
       .form-group
         label.field-label(for="title") Title
         input#title(type="text", name="title", placeholder="e.g. Campus Wi‑Fi disconnects every few minutes", required)

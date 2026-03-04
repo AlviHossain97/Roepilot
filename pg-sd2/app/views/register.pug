@@ -14,6 +14,7 @@ block content
         .alert.alert-success #{success}
 
       form.auth-form(action="/register", method="POST")
+        input(type="hidden", name="_csrf", value=csrfToken)
         .form-group
           label.field-label(for="username") Username
           input#username(type="text", name="username", placeholder="Choose a username", required)
