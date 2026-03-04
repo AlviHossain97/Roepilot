@@ -1,39 +1,39 @@
 extends layout
 
 block content
-  header.content-header(style="margin-bottom: 32px;")
+  header.content-header
     .header-text
       h1 Users
-      p.subtitle Browse people in the university network
+      p.subtitle Browse the university support network and discover top contributors.
 
-  .search-wrapper(style="margin-bottom: 48px;")
-    form#searchForm(method="get", action="/users", style="display: flex; gap: 16px;")
+  section.panel
+    form.search-form#searchForm(method="get", action="/users")
       input#searchInput(type="text", name="search", placeholder="Search users...", value=(search || ""))
       button.btn-primary(type="submit") Search
 
   if error
-    p.error(style="color: var(--accent-alert);") #{error}
+    .alert.alert-error #{error}
   else if users && users.length
     .user-grid
       each user in users
-        .user-card
+        article.user-card
           .user-card-header
             img.profile-img(src=(user.ProfilePic ? "/images/" + user.ProfilePic : "https://ui-avatars.com/api/?name=" + user.Username + "&background=000&color=fff"), alt="Profile Picture")
             div
-              h2 #{user.Username}
+              h3 #{user.Username}
               p.user-role University Member
-              
+
           .user-card-stats
             .stat-box
-              p.stat-label REP
-              p.stat-value #{user.CredibilityScore}
+              p.stat-label Reputation
+              p.stat-value #{user.CredibilityScore || 0}
             .stat-box
-              p.stat-label ID
+              p.stat-label University ID
               p.stat-value #{user.UniversityID}
-              
-          a.btn-primary(href="/users/" + user.UserID style="width: 100%; justify-content: center; margin-top: auto;") View Profile
+
+          a.btn-secondary(href="/users/" + user.UserID) View Profile
   else
-    p No users available.
+    .empty-state No users available.
 
   script.
     liveFilter("searchInput", "user-card");

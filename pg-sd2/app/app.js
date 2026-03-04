@@ -20,6 +20,21 @@ app.use(session({
   }
 }));
 
+function resolveActivePage(pathname = "") {
+  if (pathname === "/home") return "home";
+  if (pathname.startsWith("/supportrequests")) return "requests";
+  if (pathname.startsWith("/categories")) return "categories";
+  if (pathname.startsWith("/users")) return "users";
+  if (pathname.startsWith("/profile")) return "profile";
+  return "";
+}
+
+app.use((req, res, next) => {
+  res.locals.user = req.session?.user || null;
+  res.locals.activePage = resolveActivePage(req.path);
+  next();
+});
+
 // Configure file uploads for profile pictures
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -68,13 +83,13 @@ app.get("/home", requireLogin, async (req, res) => {
     `);
 
     res.render("index", {
-      user: req.session.user,
       stats: {
         totalRequests: totalRequestsRes[0].count,
         resolved: resolvedRes[0].count
       },
       recentActivity,
-      topContributors
+      topContributors,
+      pageTitle: "Dashboard"
     });
   } catch (e) {
     res.status(500).send("Error loading dashboard");
@@ -91,7 +106,7 @@ app.get("/login", (req, res) => {
   if (req.session.user) {
     return res.redirect("/home");
   }
-  res.render("login");
+  res.render("login", { pageTitle: "Login" });
 });
 
 app.post("/login", async (req, res) => {
@@ -106,13 +121,13 @@ app.post("/login", async (req, res) => {
     };
     return res.redirect("/home");
   } else {
-    res.render("login", { error: "Invalid credentials." });
+    res.render("login", { error: "Invalid credentials.", pageTitle: "Login" });
   }
 });
 
 // Register
 app.get('/register', (req, res) => {
-  res.render('register');
+  res.render('register', { pageTitle: "Register" });
 });
 
 app.post("/register", async (req, res) => {
@@ -121,10 +136,16 @@ app.post("/register", async (req, res) => {
 
   try {
     await user.addUser({ username, email, password, universityId });
-    res.render("register", { success: "Account created! You can now log in." });
+    res.render("register", {
+      success: "Account created! You can now log in.",
+      pageTitle: "Register"
+    });
   } catch (err) {
     console.error(err);
-    res.render("register", { error: "Error creating user: " + err });
+    res.render("register", {
+      error: "Error creating user: " + err,
+      pageTitle: "Register"
+    });
   }
 });
 
@@ -145,12 +166,13 @@ app.get("/users", async (req, res) => {
     res.render("users", {
       users: results,
       search,
-      sessionUser: req.session.user
+      pageTitle: "Users"
     });
   } catch (error) {
     res.render("users", {
       error: "Database error: " + error,
-      sessionUser: req.session.user
+      search,
+      pageTitle: "Users"
     });
   }
 });
@@ -176,7 +198,7 @@ app.get("/users/:id", async (req, res) => {
       supportRequests: requests,
       userAnswers: answers,
       isSelf: req.session.user?.id == userId,
-      user: req.session.user
+      pageTitle: `${userResult[0].Username} Profile`
     });
   } catch (error) {
     res.status(500).send("Error loading profile: " + error);
@@ -187,6 +209,8 @@ app.get("/users/:id", async (req, res) => {
 app.get("/supportrequests", async (req, res) => {
   const userId = req.query.user;
   const categoryId = req.query.category;
+  const search = (req.query.search || "").trim();
+  const hasActiveFilter = Boolean(userId || categoryId || search);
 
   try {
     let userName = null;
@@ -198,21 +222,34 @@ app.get("/supportrequests", async (req, res) => {
       FROM SupportRequests s
       JOIN Users u ON s.UserID = u.UserID
     `;
+    const whereClauses = [];
     const sqlParams = [];
 
     if (userId) {
-      requestsSql += " WHERE s.UserID = ?";
+      whereClauses.push("s.UserID = ?");
       sqlParams.push(userId);
-    } else if (categoryId) {
-      requestsSql += " WHERE s.CategoryID = ?";
+    }
+
+    if (categoryId) {
+      whereClauses.push("s.CategoryID = ?");
       sqlParams.push(categoryId);
+    }
+
+    if (search) {
+      whereClauses.push("(s.Title LIKE ? OR s.Description LIKE ? OR u.Username LIKE ?)");
+      const wildcard = `%${search}%`;
+      sqlParams.push(wildcard, wildcard, wildcard);
+    }
+
+    if (whereClauses.length > 0) {
+      requestsSql += ` WHERE ${whereClauses.join(" AND ")}`;
     }
 
     requestsSql += " ORDER BY s.PostDate DESC";
 
     const requests = await db.query(requestsSql, sqlParams);
 
-    if (userId && requests.length > 0) {
+    if (userId) {
       const userResult = await db.query("SELECT Username, ProfilePic FROM Users WHERE UserID = ?", [userId]);
       if (userResult.length > 0) {
         userName = userResult[0].Username;
@@ -221,14 +258,24 @@ app.get("/supportrequests", async (req, res) => {
       }
     }
 
-    if (categoryId && requests.length > 0) {
+    if (categoryId) {
       const catResult = await db.query("SELECT CategoryName FROM Categories WHERE CategoryID = ?", [categoryId]);
       if (catResult.length > 0) {
         pageTitle = `Support Requests in \"${catResult[0].CategoryName}\"`;
       }
     }
 
-    const answers = await db.query("SELECT * FROM Answers");
+    if (search) {
+      pageTitle = `Search: "${search}"`;
+    }
+
+    const answers = await db.query(`
+      SELECT a.*, u.Username AS AnswerAuthor, s.UserID AS RequestOwnerID
+      FROM Answers a
+      JOIN Users u ON a.UserID = u.UserID
+      JOIN SupportRequests s ON a.RequestID = s.RequestID
+      ORDER BY a.PostDate ASC
+    `);
     const groupedAnswers = {};
     answers.forEach(answer => {
       if (!groupedAnswers[answer.RequestID]) {
@@ -267,10 +314,18 @@ app.get("/supportrequests", async (req, res) => {
       filterUserName: userName,
       filterUserPic: userPic,
       pageTitle,
-      user: req.session.user
+      search,
+      filterUserId: userId,
+      filterCategoryId: categoryId,
+      hasActiveFilter
     });
   } catch (error) {
-    res.render("supportrequests_combined", { error: "Database error: " + error });
+    res.render("supportrequests_combined", {
+      error: "Database error: " + error,
+      search,
+      pageTitle: "Support Requests",
+      hasActiveFilter
+    });
   }
 });
 
@@ -279,12 +334,14 @@ app.get("/supportrequests/new", requireLogin, async (req, res) => {
   try {
     const categories = await db.query("SELECT * FROM Categories");
     res.render("new_supportrequest", {
-      user: req.session.user,
-      categories
+      categories,
+      pageTitle: "New Support Request"
     });
   } catch (error) {
     res.render("new_supportrequest", {
-      error: "Error loading form: " + error
+      error: "Error loading form: " + error,
+      categories: [],
+      pageTitle: "New Support Request"
     });
   }
 });
@@ -319,7 +376,18 @@ app.post("/supportrequests", requireLogin, async (req, res) => {
 
     res.redirect("/supportrequests");
   } catch (error) {
-    res.render("new_supportrequest", { error: "Error submitting request: " + error });
+    let categories = [];
+    try {
+      categories = await db.query("SELECT * FROM Categories");
+    } catch (catErr) {
+      console.error("Error loading categories after submit failure:", catErr);
+    }
+
+    res.render("new_supportrequest", {
+      error: "Error submitting request: " + error,
+      categories,
+      pageTitle: "New Support Request"
+    });
   }
 });
 
@@ -328,13 +396,14 @@ app.post("/answers/:requestId", requireLogin, async (req, res) => {
   const requestId = req.params.requestId;
   const userId = req.session.user.id;
   const answerText = req.body.answerText;
+  const redirectTo = req.get("referer") || "/supportrequests";
 
   try {
     await db.query(
       "INSERT INTO Answers (RequestID, UserID, AnswerText, PostDate, NumOfUpvote) VALUES (?, ?, ?, NOW(), 0)",
       [requestId, userId, answerText]
     );
-    res.redirect("/supportrequests");
+    res.redirect(redirectTo);
   } catch (error) {
     res.status(500).send("Error submitting answer: " + error);
   }
@@ -343,9 +412,10 @@ app.post("/answers/:requestId", requireLogin, async (req, res) => {
 // Upvote Answer
 app.post("/answers/upvote/:id", requireLogin, (req, res) => {
   const answerId = req.params.id;
+  const redirectTo = req.get("referer") || "/supportrequests";
   answerModel.upvoteAnswer(answerId)
     .then(() => {
-      res.redirect("/supportrequests");
+      res.redirect(redirectTo);
     })
     .catch(error => {
       res.status(500).send("Error upvoting answer: " + error);
@@ -354,9 +424,10 @@ app.post("/answers/upvote/:id", requireLogin, (req, res) => {
 
 // Downvote Answer
 app.post("/answers/downvote/:id", requireLogin, (req, res) => {
+  const redirectTo = req.get("referer") || "/supportrequests";
   answerModel.downvoteAnswer(req.params.id)
     .then(() => {
-      res.redirect("/supportrequests");
+      res.redirect(redirectTo);
     })
     .catch(error => {
       res.status(500).send("Error downvoting answer: " + error);
@@ -366,8 +437,23 @@ app.post("/answers/downvote/:id", requireLogin, (req, res) => {
 // Accept Answer
 app.post("/answers/accept/:id", requireLogin, async (req, res) => {
   const answerId = req.params.id;
+  const redirectTo = req.get("referer") || "/supportrequests";
   try {
-    // We should ideally check if the current user is the author of the request
+    const ownership = await db.query(`
+      SELECT s.UserID AS RequestOwnerID
+      FROM Answers a
+      JOIN SupportRequests s ON a.RequestID = s.RequestID
+      WHERE a.AnswerID = ?
+    `, [answerId]);
+
+    if (ownership.length === 0) {
+      return res.status(404).send("Answer not found.");
+    }
+
+    if (Number(ownership[0].RequestOwnerID) !== Number(req.session.user.id)) {
+      return res.status(403).send("Only the support request owner can accept an answer.");
+    }
+
     await db.query("UPDATE Answers SET IsAccepted = 1 WHERE AnswerID = ?", [answerId]);
 
     // Reward credibility score to the answer author
@@ -376,21 +462,34 @@ app.post("/answers/accept/:id", requireLogin, async (req, res) => {
       await db.query("UPDATE Users SET CredibilityScore = CredibilityScore + 15 WHERE UserID = ?", [ansData[0].UserID]);
     }
 
-    res.redirect("/supportrequests");
+    res.redirect(redirectTo);
   } catch (error) {
     res.status(500).send("Error accepting answer: " + error);
   }
 });
 
 // Categories
-app.get("/categories", (req, res) => {
-  db.query("SELECT * FROM Categories")
-    .then(results => {
-      res.render("categories", { categories: results });
-    })
-    .catch(error => {
-      res.render("categories", { error: "Database error: " + error });
+app.get("/categories", async (req, res) => {
+  const search = (req.query.search || "").trim();
+  let sql = "SELECT * FROM Categories";
+  const params = [];
+
+  if (search) {
+    sql += " WHERE CategoryName LIKE ? OR Description LIKE ?";
+    const wildcard = `%${search}%`;
+    params.push(wildcard, wildcard);
+  }
+
+  try {
+    const results = await db.query(sql, params);
+    res.render("categories", { categories: results, search, pageTitle: "Categories" });
+  } catch (error) {
+    res.render("categories", {
+      error: "Database error: " + error,
+      search,
+      pageTitle: "Categories"
     });
+  }
 });
 
 // My Profile View
@@ -412,7 +511,7 @@ app.get("/profile", requireLogin, async (req, res) => {
       supportRequests: requests,
       userAnswers: answers,
       isSelf: true,
-      user: req.session.user
+      pageTitle: "My Profile"
     });
   } catch (error) {
     res.status(500).send("Error loading profile: " + error);
@@ -426,7 +525,7 @@ app.get("/profile/edit", requireLogin, async (req, res) => {
     const userResult = await db.query("SELECT * FROM Users WHERE UserID = ?", [userId]);
     res.render("edit_profile", {
       profileUser: userResult[0],
-      user: req.session.user
+      pageTitle: "Edit Profile"
     });
   } catch (err) {
     res.status(500).send("Error loading profile edit form: " + err);

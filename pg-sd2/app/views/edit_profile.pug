@@ -1,25 +1,29 @@
 extends layout
 
 block content
-  .form-card
+  section.panel.form-panel
     h1 Edit Profile
+    p.subtitle Update your contact details and profile picture.
 
-    form(method="POST", action="/profile/edit", enctype="multipart/form-data")
+    form.auth-form(method="POST", action="/profile/edit", enctype="multipart/form-data")
       .form-group
-        label(for="email") Email
-        input(type="email", name="email", value=profileUser.Email, required)
-
-      .form-group
-        label(for="universityId") University ID
-        input(type="text", name="universityId", value=profileUser.UniversityID)
+        label.field-label(for="email") Email
+        input#email(type="email", name="email", value=profileUser.Email, required)
 
       .form-group
-        label(for="profilePic") Profile Picture
+        label.field-label(for="universityId") University ID
+        input#universityId(type="text", name="universityId", value=profileUser.UniversityID)
+
+      .form-group
+        label.field-label(for="profilePic") Profile Picture
         if profileUser.ProfilePic
-          img.profile-img(src=`/images/${profileUser.ProfilePic}`, alt="Current Profile Picture")
+          img.profile-avatar(src=`/images/${profileUser.ProfilePic}`, alt="Current Profile Picture")
         else
-          img.profile-img(src="/images/default-avatar.png", alt="Default Picture")
-        input(type="file", name="profilePic", accept="image/*")
+          img.profile-avatar(src=`https://ui-avatars.com/api/?name=${profileUser.Username || 'User'}&background=111827&color=ffffff`, alt="Default Picture")
+        input#profilePic(type="file", name="profilePic", accept="image/*")
 
-      button.btn(type="submit") Save Changes
-      a.back-link(href="/profile") Cancel
+      .form-actions
+        button.btn-primary(type="submit")
+          i(data-feather="save")
+          span Save Changes
+        a.btn-secondary(href="/profile") Cancel

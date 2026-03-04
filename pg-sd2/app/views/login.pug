@@ -5,21 +5,23 @@ block content
     .auth-card
       .auth-logo
         img(src="/images/R.png", alt="RoePilot Logo")
-      h1 Login
-      p.subtitle(style="margin-bottom: 32px;") Welcome back to RoePilot IT Support
+      h1 Welcome back
+      p.subtitle Sign in to continue managing support requests and answers.
 
       if error
-        p.error(style="color: var(--accent-alert); margin-bottom: 16px;") #{error}
+        .alert.alert-error #{error}
 
-      form(action="/login", method="POST", style="display: flex; flex-direction: column; gap: 16px;")
-        div
-          label(style="font-family: var(--font-data); font-size: 12px; color: var(--text-muted);") Username or Email
-          input(type="text", name="identifier", placeholder="Enter your username or email", required, style="margin-top: 8px;")
-        div
-          label(style="font-family: var(--font-data); font-size: 12px; color: var(--text-muted);") Password
-          input(type="password", name="password", placeholder="Enter your password", required, style="margin-top: 8px;")
-        button.btn-primary(type="submit" style="width: 100%; justify-content: center; padding: 14px; margin-top: 16px; font-size: 14px;") Login
+      form.auth-form(action="/login", method="POST")
+        .form-group
+          label.field-label(for="identifier") Username or Email
+          input#identifier(type="text", name="identifier", placeholder="Enter your username or email", required)
+        .form-group
+          label.field-label(for="password") Password
+          input#password(type="password", name="password", placeholder="Enter your password", required)
+        button.btn-primary(type="submit")
+          i(data-feather="log-in")
+          span Sign In
 
-      p.auth-link(style="margin-top: 32px; text-align: center; font-family: var(--font-data); font-size: 13px;")
-        | Don't have an account? 
-        a(href="/register" style="color: var(--accent-primary); font-weight: 500; text-decoration: none;") Register here
+      p.auth-link
+        | Don’t have an account?
+        a(href="/register") Create one now

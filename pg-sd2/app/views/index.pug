@@ -1,49 +1,72 @@
 extends layout
 
 block content
+  - const total = Number(stats && stats.totalRequests ? stats.totalRequests : 0)
+  - const resolved = Number(stats && stats.resolved ? stats.resolved : 0)
+  - const open = Math.max(total - resolved, 0)
+  - const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : 0
+
   header.content-header
     .header-text
-      h1 RoePilot Dashboard
-      p.subtitle University IT Support Center
+      h1 Dashboard Overview
+      p.subtitle Keep track of active support activity and contributors in one place.
     a.btn-primary(href="/supportrequests/new")
-      i(data-feather="plus") 
-      span New Request
+      i(data-feather="plus")
+      span Raise Request
 
-  .metrics-row
+  .metrics-grid
     .metric-card
-      .metric-label TOTAL REQUESTS
-      .metric-value #{stats.totalRequests}
+      p.metric-label Total Requests
+      p.metric-value #{total}
+      p.metric-note All-time support posts
     .metric-card
-      .metric-label RESOLVED
-      .metric-value #{stats.resolved}
+      p.metric-label Resolved
+      p.metric-value #{resolved}
+      p.metric-note Marked as solved
+    .metric-card
+      p.metric-label Open
+      p.metric-value #{open}
+      p.metric-note Awaiting final solution
+    .metric-card
+      p.metric-label Resolution Rate
+      p.metric-value #{resolutionRate}%
+      p.metric-note Based on resolved requests
 
-  .dashboard-content
-    .activity-feed
-      h2.section-title Recent Activity
-      .feed-list
-        if recentActivity && recentActivity.length > 0
+  .dashboard-grid
+    section.panel
+      .panel-header
+        h2.section-title Recent Activity
+        a.btn-link(href="/supportrequests") View all requests
+      if recentActivity && recentActivity.length > 0
+        .activity-list
           each item in recentActivity
-            .feed-card
-              .status-bar(class=(item.IsResolved ? 'status-green' : 'status-red'))
-              .feed-card-content
+            article.activity-item
+              .status-dot(class=(item.IsResolved ? 'status-green' : 'status-red'))
+              .activity-content
                 h3 #{item.Title}
                 .feed-meta
-                  span #{item.Username}
-                  span.dot •
+                  span by @#{item.Username}
+                  span •
                   span #{new Date(item.PostDate).toLocaleDateString()}
-        else
-          p No recent activity.
+                  span •
+                  if item.IsResolved
+                    span.badge.badge-success Resolved
+                  else
+                    span.badge.badge-warning Open
+      else
+        p.empty-state No recent activity yet.
 
-    aside.top-contributors
-      h2.section-title Top Contributors
-      .contributor-list
-        if topContributors && topContributors.length > 0
-          each user in topContributors
-            .contributor-item
-              .contributor-icon
-                i(data-feather="user")
-              .contributor-info
-                .contributor-name #{user.Username}
-                .contributor-rep #{user.CredibilityScore} rep
-        else
-          p No contributors found.
+    aside.panel
+      .panel-header
+        h2.section-title Top Contributors
+        a.btn-link(href="/users") Explore users
+      if topContributors && topContributors.length > 0
+        .contributor-list
+          each contributor, index in topContributors
+            article.contributor-item
+              span.rank-pill ##{index + 1}
+              .contributor-main
+                p.contributor-name #{contributor.Username}
+                p.contributor-rep #{contributor.CredibilityScore} reputation
+      else
+        p.empty-state No contributors found.

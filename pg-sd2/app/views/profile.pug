@@ -1,55 +1,64 @@
 extends layout
 
 block content
-  header.content-header(style="margin-bottom: 32px;")
+  header.content-header
     .header-text
       h1 #{isSelf ? "My Profile" : profileUser.Username + "'s Profile"}
       p.subtitle Member since #{new Date(profileUser.RegistrationDate).toLocaleDateString()}
 
-  .user-card(style="max-width: 600px; margin-bottom: 48px;")
-    .user-card-header
+  section.profile-hero.panel
+    .profile-head
       if profileUser.ProfilePic
-        img.profile-img(src=`/images/${profileUser.ProfilePic}`, alt="Profile Picture")
+        img.profile-avatar(src=`/images/${profileUser.ProfilePic}`, alt="Profile Picture")
       else
-        img.profile-img(src=`https://ui-avatars.com/api/?name=${profileUser.Username}&background=000&color=fff`, alt="Default Picture")
-      div
+        img.profile-avatar(src=`https://ui-avatars.com/api/?name=${profileUser.Username}&background=111827&color=ffffff`, alt="Default Picture")
+      .profile-meta
         h2 #{profileUser.Username}
         p.user-role University Member
+        p.subtitle #{profileUser.Email}
 
-    .user-card-stats
+    .stat-strip
       .stat-box
-        p.stat-label REP
+        p.stat-label Reputation
         p.stat-value #{profileUser.CredibilityScore || 0}
       .stat-box
-        p.stat-label ID
+        p.stat-label University ID
         p.stat-value #{profileUser.UniversityID}
       .stat-box
-        p.stat-label EMAIL
-        p.stat-value(style="font-size: 14px; margin-top: auto;") #{profileUser.Email}
+        p.stat-label Requests
+        p.stat-value #{supportRequests.length}
+      .stat-box
+        p.stat-label Answers
+        p.stat-value #{userAnswers.length}
 
     if isSelf
-      a.btn-primary(href="/profile/edit" style="justify-content: center;") Edit Profile
+      a.btn-secondary(href="/profile/edit")
+        i(data-feather="edit-2")
+        span Edit Profile
 
-    hr
+  .profile-grid
+    section.panel
+      .panel-header
+        h2.section-title Support Requests
+      if supportRequests.length
+        .stack-list
+          each req in supportRequests
+            article.list-item
+              h3= req.Title
+              p= req.Description
+              p.muted-text Posted on #{new Date(req.PostDate).toLocaleDateString()}
+      else
+        p.empty-state This user hasn’t made any support requests yet.
 
-    h2 Support Requests
-    if supportRequests.length
-      each req in supportRequests
-        .post-box
-          h3= req.Title
-          p= req.Description
-          p.small Posted on #{req.PostDate}
-    else
-      p This user hasn’t made any support requests yet.
-
-    hr
-
-    h2 Answers
-    if userAnswers.length
-      each ans in userAnswers
-        .answer-box
-          h4 Answer to: #{ans.RequestTitle}
-          p= ans.AnswerText
-          p.small Posted on #{ans.PostDate}
-    else
-      p No answers yet.
+    section.panel
+      .panel-header
+        h2.section-title Answers
+      if userAnswers.length
+        .stack-list
+          each ans in userAnswers
+            article.list-item
+              h3 Answer to: #{ans.RequestTitle}
+              p= ans.AnswerText
+              p.muted-text Posted on #{new Date(ans.PostDate).toLocaleDateString()}
+      else
+        p.empty-state No answers yet.

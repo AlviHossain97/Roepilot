@@ -1,26 +1,40 @@
 extends layout
 
 block content
-  .form-card
-    h1 Ask a New Question
+  section.panel.form-panel
+    h1 Create Support Request
+    p.subtitle Describe your issue with context so others can help faster.
 
     if error
-      p.error #{error}
+      .alert.alert-error #{error}
 
-    form(method="POST", action="/supportrequests")
+    form.auth-form(method="POST", action="/supportrequests")
       .form-group
-        label(for="title") Title
-        input#title(type="text", name="title", placeholder="Enter your question title", required)
-
-      .form-group
-        label(for="description") Description
-        textarea#description(name="description", rows="6", placeholder="Describe your issue clearly...", required)
+        label.field-label(for="title") Title
+        input#title(type="text", name="title", placeholder="e.g. Campus Wi‑Fi disconnects every few minutes", required)
 
       .form-group
-        label(for="categoryId") Select a Category
-        select#categoryId(name="categoryId", required)
-          option(value="" disabled selected) -- Choose a category --
-          each category in categories
-            option(value=category.CategoryID)= category.CategoryName
+        label.field-label(for="description") Description
+        textarea#description(name="description", rows="7", placeholder="Include what happened, what you expected, and any steps you've already tried.", required)
 
-      button.btn(type="submit") Submit Question
+      .form-grid
+        .form-group
+          label.field-label(for="categoryId") Category
+          select#categoryId(name="categoryId", required)
+            option(value="" disabled selected) Choose a category
+            each category in categories
+              option(value=category.CategoryID)= category.CategoryName
+
+        .form-group
+          label.field-label(for="bountyValue") Bounty (rep)
+          input#bountyValue(type="number", min="0", step="1", name="bountyValue", placeholder="0")
+
+      .form-group
+        label.field-label(for="tags") Tags
+        input#tags(type="text", name="tags", placeholder="wifi, windows, login")
+
+      .form-actions
+        button.btn-primary(type="submit")
+          i(data-feather="send")
+          span Publish Request
+        a.btn-secondary(href="/supportrequests") Cancel

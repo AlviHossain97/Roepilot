@@ -1,30 +1,32 @@
 extends layout
 
 block content
-  h1 Support Categories
+  header.content-header
+    .header-text
+      h1 Support Categories
+      p.subtitle Explore request domains and jump into relevant discussions.
 
-  .search-container(style="display: flex; justify-content: center; margin-bottom: 20px;")
-    .search-card(style="background: #f9f9f9; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; max-width: 600px;")
-      form#searchForm(method="get", action="/categories", style="display: flex; gap: 10px;")
-        input#searchInput(type="text", name="search", placeholder="Search categories...", value=(search || ""), style="flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #ccc;")
+  section.panel
+    form.search-form#searchForm(method="get", action="/categories")
+      input#searchInput(type="text", name="search", placeholder="Search categories...", value=(search || ""))
+      button.btn-primary(type="submit") Search
 
   if error
-    p.error #{error}
+    .alert.alert-error #{error}
   else if categories && categories.length
     .category-grid
       each category in categories
-        .category-card
-          .category-header(style="display: flex; justify-content: space-between; align-items: center;")
-            h2(style="margin: 0;") #{category.CategoryName}
+        article.category-card
+          .category-header
+            h3 #{category.CategoryName}
             img.category-img(
               src=(category.Image ? "/images/categories/" + category.Image : "/images/default-category.png"),
-              alt=category.CategoryName,
-              style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;"
+              alt=category.CategoryName
             )
           p #{category.Description}
-          a.btn(href="/supportrequests?category=" + category.CategoryID) View Support Requests
+          a.btn-secondary(href="/supportrequests?category=" + category.CategoryID) View Requests
   else
-    p No categories available.
+    .empty-state No categories available.
 
   script.
     liveFilter("searchInput", "category-card");
